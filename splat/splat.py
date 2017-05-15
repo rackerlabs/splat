@@ -72,18 +72,25 @@ def start(arguments):
     global PAUSED
     PAUSED = False
 
+    tempdir = '/tmp/splat'
+
     try:
-        os.mkdir('/tmp/splat')
+        os.mkdir(tempdir)
+        os.chown(tempdir, -1, 100)
+        os.chmod(tempdir, 0o1777)
     except FileExistsError:
         pass
 
     mypid = str(os.getpid()) + "\n"
 
-    fp = tempfile.NamedTemporaryFile(prefix="/tmp/splat/", suffix=".{}".format(str(os.getpid())))
+    tempfile.tempdir = tempdir
+    fp = tempfile.NamedTemporaryFile(suffix=".{}".format(str(os.getpid())))
     fp.write(str.encode(str(datetime.now()) + "\n"))
     fp.write(str.encode(mypid))
     fp.write(str.encode(arguments['PAIRS'] + "\n"))
     fp.flush()
+    os.chown(fp.name, -1, 100)
+    os.chmod(fp.name, 0o664)
 
     journal.send(
         message='Starting Pomodoro',
