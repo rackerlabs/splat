@@ -23,6 +23,8 @@ Options:
 from datetime import timedelta
 from docopt import docopt
 from systemd import journal
+import hvac
+import requests
 import signal
 import os
 import sys
@@ -30,6 +32,7 @@ import time
 import tempfile
 import glob
 import arrow
+import json
 
 REMAINING = 0
 PAUSED = False
@@ -73,6 +76,14 @@ def start(arguments):
     global PAUSED
     PAUSED = False
 
+    try:
+        story_response = get_ptid(arguments['PTID'])
+    except requests.exceptions.HTTPError:
+        print(f"The story {arguments['PTID']} was not found.")
+        sys.exit()
+
+    print(f"Starting work on story: {story_response['name']}")
+
     tempdir = '/tmp/splat'
 
     try:
@@ -94,7 +105,8 @@ def start(arguments):
     os.chmod(fp.name, 0o664)
 
     journal.send(
-        message='Starting Pomodoro',
+        message='Starting Pomodoro. {} are working on {}'.format(arguments['PAIRS'], arguments['PTID']),
+        application='splat',
         priority=journal.Priority.NOTICE,
         PAIRS=f"{arguments['PAIRS']}",
         PTID=f"{arguments['PTID']}",
@@ -148,6 +160,35 @@ def get_pid_from_pairs(pairs):
             return int(lines[1].strip("\n"))
     else:
         raise
+
+def connect_to_vault():
+    client = hvac.Client(url=os.environ['VAULT_ADDR'])
+    if 'VAULT_AUTH_TOKEN' in os.environ:
+        client.token = os.environ['VAULT_AUTH_TOKEN']
+    elif 'VAULT_AUTH_GITHUB_TOKEN' in os.environ:
+        client.auth_github(token=os.environ['VAULT_AUTH_GITHUB_TOKEN'])
+    else:
+        raise Exception("No Vault Auth environment variables provided.")
+    return client
+
+def vault_read(path):
+    client = connect_to_vault()
+    response = client.read(path)
+    return _vault_strip_response(response)
+
+def _vault_strip_response(response):
+    if not response or 'data' not in response:
+        raise KeyError("Vault did not respond with a secret as expected.")
+    return response['data']
+
+def get_ptid(ptid):
+    pivotal_api_token = vault_read("/mpcf/automation/splat/params").get('pivotal_api_token')
+    pivotal_story_endpoint = "https://www.pivotaltracker.com/services/v5/stories/{}"
+    headers = { 'X-TrackerToken': pivotal_api_token }
+
+    response = requests.get(pivotal_story_endpoint.format(ptid), headers=headers)
+    response.raise_for_status()
+    return json.loads(response.text)
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
