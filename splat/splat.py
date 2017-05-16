@@ -20,7 +20,7 @@ Options:
   -h --help     Show this screen.
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from docopt import docopt
 from systemd import journal
 import signal
@@ -29,6 +29,7 @@ import sys
 import time
 import tempfile
 import glob
+import arrow
 
 REMAINING = 0
 PAUSED = False
@@ -85,7 +86,7 @@ def start(arguments):
 
     tempfile.tempdir = tempdir
     fp = tempfile.NamedTemporaryFile(suffix=".{}".format(str(os.getpid())))
-    fp.write(str.encode(str(datetime.now()) + "\n"))
+    fp.write(str.encode(str(arrow.utcnow()) + "\n"))
     fp.write(str.encode(mypid))
     fp.write(str.encode(arguments['PAIRS'] + "\n"))
     fp.flush()
@@ -133,8 +134,8 @@ def clean_stale_files():
     for f in temp_files:
         tmpfile = open("/tmp/splat/" + f, 'r')
         lines = tmpfile.readlines()
-        creation_date = datetime.strptime(lines[0].strip("\n"), "%Y-%m-%d %H:%M:%S.%f")
-        if (datetime.now() - creation_date).seconds > 3000:
+        creation_date = arrow.get(lines[0].strip("\n"))
+        if (arrow.utcnow() - creation_date).seconds > 3000:
             os.remove("/tmp/splat/" + f)
 
 def get_pid_from_pairs(pairs):
