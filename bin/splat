@@ -5,11 +5,13 @@ Usage:
   splat start PTID PAIRS
   splat status
   splat pause PAIRS
+  splat report DAYS
   splat (-h | --help)
 
 Arguments:
   PTID          Pivotal Tracker ID
   PAIRS         Comma separated list of initials
+  DAYS          Number of days to report on
 
 Examples:
   splat start 194492 bl,sk

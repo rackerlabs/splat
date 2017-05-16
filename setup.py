@@ -9,7 +9,7 @@ setup(
         "packaging==16.8",
         "pyparsing==2.2.0",
         "six==1.10.0",
-        "systemd==0.9.15",
+        "systemd-python==234",
         "arrow==0.10.0",
     ],
     python_requires=">=3.6",

@@ -1,24 +1,4 @@
 #!/usr/bin/env python3.6
-"""Splat Pomodoro Timer
-
-Usage:
-  splat start PTID PAIRS
-  splat status
-  splat pause PAIRS
-  splat (-h | --help)
-
-Arguments:
-  PTID		Pivotal Tracker ID
-  PAIRS		Comma separated list of initials
-
-Examples:
-  splat start 194492 bl,sk
-  splat start 194492 mb
-  splat pause bl,sk
-
-Options:
-  -h --help     Show this screen.
-"""
 
 from datetime import timedelta
 from docopt import docopt
@@ -61,7 +41,21 @@ def main(arguments):
         status()
     elif arguments['pause']:
         send_pause(arguments)
+    elif arguments['report']:
+        report(arguments['DAYS'])
 
+
+def report(days):
+    days_to_report = arrow.utcnow().replace(days=-int(days)).timestamp
+    j = journal.Reader()
+    j.seek_realtime(days_to_report)
+    j.add_match(APPLICATION="splat")
+    stories = []
+    for entry in j:
+        stories.append(entry['PTID'])
+
+    print(stories)
+    
 
 def send_pause(arguments):
     pairs = set(arguments['PAIRS'].split(","))
@@ -105,9 +99,9 @@ def start(arguments):
     os.chmod(fp.name, 0o664)
 
     journal.send(
-        message='Starting Pomodoro. {} are working on {}'.format(arguments['PAIRS'], arguments['PTID']),
-        application='splat',
-        priority=journal.Priority.NOTICE,
+        MESSAGE='Starting Pomodoro. {} are working on {}'.format(arguments['PAIRS'], arguments['PTID']),
+        APPLICATION='splat',
+        PRIORITY="NOTICE",
         PAIRS=f"{arguments['PAIRS']}",
         PTID=f"{arguments['PTID']}",
     )
