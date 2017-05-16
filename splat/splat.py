@@ -107,11 +107,11 @@ def start(arguments):
         if PAUSED:
             time.sleep(5)
             continue
-        fp.write(str.encode(str(REMAINING) + "\n"))
+        fp.write(str.encode(str(REMAINING).zfill(4) + "\n"))
         fp.flush()
         time.sleep(5)
         REMAINING -= 5
-        string_size = len(str.encode(str(REMAINING) + "\n"))
+        string_size = len(str.encode(str(REMAINING).zfill(4) + "\n"))
         fp.seek(-string_size, 1)
 
 def status():
