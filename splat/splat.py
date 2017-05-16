@@ -1,25 +1,27 @@
 #!/usr/bin/env python3.6
 
 from datetime import timedelta
-from docopt import docopt
-from systemd import journal
-import hvac
-import requests
-import signal
 import os
 import sys
-import time
 import tempfile
-import glob
+import time
+
 import arrow
+from docopt import docopt
+import hvac
 import json
+import requests
+import signal
+from systemd import journal
 
 REMAINING = 0
 PAUSED = False
 
+
 # This will cause tmp files to be cleaned up when PID is sent the kill signal.
 def receive_signal(signum, stack):
     sys.exit()
+
 
 def pause(signum, stack):
     global PAUSED
@@ -28,6 +30,7 @@ def pause(signum, stack):
         print("Paused")
     else:
         print("Continuing")
+
 
 signal.signal(signal.SIGTERM, receive_signal)
 signal.signal(signal.SIGINT, receive_signal)
@@ -55,7 +58,7 @@ def report(days):
         stories.append(entry['PTID'])
 
     print(stories)
-    
+
 
 def send_pause(arguments):
     pairs = set(arguments['PAIRS'].split(","))
@@ -65,6 +68,7 @@ def send_pause(arguments):
         print("Session pairs not found.")
         sys.exit()
     os.kill(pid, signal.SIGUSR1)
+
 
 def start(arguments):
     global PAUSED
@@ -99,7 +103,8 @@ def start(arguments):
     os.chmod(fp.name, 0o664)
 
     journal.send(
-        MESSAGE='Starting Pomodoro. {} are working on {}'.format(arguments['PAIRS'], arguments['PTID']),
+        MESSAGE='Starting Pomodoro. {} are working on {}'.format(
+            arguments['PAIRS'], arguments['PTID']),
         APPLICATION='splat',
         PRIORITY="NOTICE",
         PAIRS=f"{arguments['PAIRS']}",
@@ -120,6 +125,7 @@ def start(arguments):
         string_size = len(str.encode(str(REMAINING).zfill(4) + "\n"))
         fp.seek(-string_size, 1)
 
+
 def status():
     clean_stale_files()
     temp_files = splat_tempfiles()
@@ -132,8 +138,10 @@ def status():
     if statusbar != "":
         print("|" + statusbar)
 
+
 def splat_tempfiles():
     return os.listdir("/tmp/splat")
+
 
 def clean_stale_files():
     temp_files = splat_tempfiles()
@@ -143,6 +151,7 @@ def clean_stale_files():
         creation_date = arrow.get(lines[0].strip("\n"))
         if (arrow.utcnow() - creation_date).seconds > 3000:
             os.remove("/tmp/splat/" + f)
+
 
 def get_pid_from_pairs(pairs):
     temp_files = splat_tempfiles()
@@ -155,6 +164,7 @@ def get_pid_from_pairs(pairs):
     else:
         raise
 
+
 def connect_to_vault():
     client = hvac.Client(url=os.environ['VAULT_ADDR'])
     if 'VAULT_AUTH_TOKEN' in os.environ:
@@ -165,24 +175,29 @@ def connect_to_vault():
         raise Exception("No Vault Auth environment variables provided.")
     return client
 
+
 def vault_read(path):
     client = connect_to_vault()
     response = client.read(path)
     return _vault_strip_response(response)
+
 
 def _vault_strip_response(response):
     if not response or 'data' not in response:
         raise KeyError("Vault did not respond with a secret as expected.")
     return response['data']
 
-def get_ptid(ptid):
-    pivotal_api_token = vault_read("/mpcf/automation/splat/params").get('pivotal_api_token')
-    pivotal_story_endpoint = "https://www.pivotaltracker.com/services/v5/stories/{}"
-    headers = { 'X-TrackerToken': pivotal_api_token }
 
-    response = requests.get(pivotal_story_endpoint.format(ptid), headers=headers)
+def get_ptid(ptid):
+    vault_entry = vault_read("/mpcf/automation/splat/params")
+    pivotal_api_token = vault_entry.get('pivotal_api_token')
+    pivotal_story_api = "https://www.pivotaltracker.com/services/v5/stories/{}"
+    headers = {'X-TrackerToken': pivotal_api_token}
+
+    response = requests.get(pivotal_story_api.format(ptid), headers=headers)
     response.raise_for_status()
     return json.loads(response.text)
+
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
