@@ -146,8 +146,8 @@ def get_pid_from_pairs(pairs):
         pairs_from_file = set(lines[2].strip("\n").split(","))
         if pairs_from_file == pairs:
             return int(lines[1].strip("\n"))
-        else:
-            raise
+    else:
+        raise
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
