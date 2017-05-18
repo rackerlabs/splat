@@ -6,6 +6,9 @@ import sys
 import tempfile
 import time
 
+package_index = sys.path.index('/usr/lib/python3.6/dist-packages')
+sys.path.append(sys.path.pop(package_index))
+
 import arrow
 from docopt import docopt
 import hvac
