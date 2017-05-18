@@ -6,8 +6,17 @@ import sys
 import tempfile
 import time
 
-package_index = sys.path.index('/usr/lib/python3.6/dist-packages')
-sys.path.append(sys.path.pop(package_index))
+try:
+    package_index = sys.path.index('/usr/lib/python3.6/dist-packages')
+    sys.path.append(sys.path.pop(package_index))
+except ValueError:
+    pass
+
+try:
+    package_index = sys.path.index('/usr/lib/python3/dist-packages')
+    sys.path.append(sys.path.pop(package_index))
+except ValueError:
+    pass
 
 import arrow
 from docopt import docopt
