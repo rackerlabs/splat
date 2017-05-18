@@ -5,6 +5,7 @@ import os
 import sys
 import tempfile
 import time
+from collections import defaultdict, OrderedDict
 
 try:
     package_index = sys.path.index('/usr/lib/python3.6/dist-packages')
@@ -59,19 +60,74 @@ def main(arguments):
     elif arguments['report']:
         report(arguments['DAYS'])
 
+#{
+#	"4323423": {
+#		"chunks": [{
+#				"date": "somedate",
+#				"users": ["bk", "mb"],
+#				"tags": ["blah", "blahblah"]
+#			},
+#			{
+#				"date": "somedate",
+#				"users": ["bk", "mb"]
+#			}
+#		]
+#	}
+#}
 
 def report(days):
+    rdata = defaultdict(lambda:{'chunks':[],'labels':[],'name':""})
     days_to_report = arrow.utcnow().replace(days=-int(days)).timestamp
     j = journal.Reader()
     j.seek_realtime(days_to_report)
     j.add_match(APPLICATION="splat")
-    stories = []
     for entry in j:
-        stories.append(entry['PTID'])
+        add_entry(entry, rdata)
+    for ptid, data in rdata.items():
+        time_spent = 0
+        for chunk in data['chunks']:
+            time_spent += len(chunk['users']) * 25
+        rdata[ptid]['time_spent'] = time_spent
 
-    print(stories)
+    print("__Time per story__")
+    time_per_story(rdata)
+    print("\n")
+    print("__Time per label__")
+    time_per_label(rdata)
 
 
+def time_per_story(rdata):
+    time_list = []
+    for ptid, data in rdata.items():
+        time_spent = timedelta(minutes=data['time_spent'])
+        time_list.append((ptid, time_spent, data['name']))
+    s_list = sorted(time_list, key=lambda x: x[1], reverse=True)
+
+    for ptid, time_spent, name in s_list:
+        print(f"{ptid} {time_spent} {name}")
+
+def time_per_label(rdata):
+    labels = defaultdict(lambda: 0)
+    for ptid, data in rdata.items():
+        for label in data['labels']:
+            labels[label] += rdata[ptid]['time_spent']
+    label_list = [(label, time_spent,)for label, time_spent in labels.items()]
+    s_list = sorted(label_list, key=lambda x: x[1], reverse=True)
+    for label, time_spent in s_list:
+        td=timedelta(minutes=time_spent)
+        print(f"{label} {td}")
+
+def add_entry(entry, rdata={}):
+    ptid=entry['PTID']
+    story_data = get_ptid(ptid)
+    rentry = {
+            "date": entry['__REALTIME_TIMESTAMP'],
+            "users": entry['PAIRS'].split(','),
+            }
+    rdata[ptid]['labels']=[label['name'] for label in story_data['labels']]
+    rdata[ptid]['chunks'].append(rentry) 
+    rdata[ptid]['name'] = story_data['name']
+   
 def send_pause(arguments):
     pairs = set(arguments['PAIRS'].split(","))
     try:
