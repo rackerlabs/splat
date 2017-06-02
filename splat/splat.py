@@ -235,12 +235,14 @@ def get_pid_from_pairs(pairs):
 
 def connect_to_vault():
     client = hvac.Client(url=os.environ['VAULT_ADDR'])
-    if 'VAULT_AUTH_TOKEN' in os.environ:
+    PATH=os.path.expanduser('~/.vault-token')
+    if os.path.isfile(PATH) and os.access(PATH, os.R_OK):
+        with open(PATH, "r") as F:
+            client.token = F.read()
+    elif 'VAULT_AUTH_TOKEN' in os.environ:
         client.token = os.environ['VAULT_AUTH_TOKEN']
-    elif 'VAULT_AUTH_GITHUB_TOKEN' in os.environ:
-        client.auth_github(token=os.environ['VAULT_AUTH_GITHUB_TOKEN'])
     else:
-        raise Exception("No Vault Auth environment variables provided.")
+        raise Exception("No auth token could be found. Try authing with Vault.")
     return client
 
 
