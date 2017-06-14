@@ -2,9 +2,9 @@
 """Splat Pomodoro Timer
 
 Usage:
-  splat start PTID PAIRS
+  splat start PTID PAIRS...
   splat status
-  splat pause PAIRS
+  splat pause PAIRS...
   splat report DAYS
   splat (-h | --help)
 
@@ -16,9 +16,9 @@ Arguments:
 Examples:
   splat start https://www.pivotaltracker.com/story/show/146530609 bk
   splat start #194492 bk
-  splat start 194492 bl,sk
+  splat start 194492 bl sk
   splat start 194492 mb
-  splat pause bl,sk
+  splat pause bl sk
 
 Options:
   -h --help     Show this screen.

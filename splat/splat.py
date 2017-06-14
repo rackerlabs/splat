@@ -129,7 +129,7 @@ def add_entry(entry, rdata={}):
     rdata[ptid]['name'] = story_data['name']
    
 def send_pause(arguments):
-    pairs = set(arguments['PAIRS'].split(","))
+    pairs = set(arguments['PAIRS'])
     try:
         pid = get_pid_from_pairs(pairs)
     except:
@@ -160,22 +160,23 @@ def start(arguments):
         pass
 
     mypid = str(os.getpid()) + "\n"
+    pairs = ','.join(arguments['PAIRS'])
 
     tempfile.tempdir = tempdir
     fp = tempfile.NamedTemporaryFile(suffix=".{}".format(str(os.getpid())))
     fp.write(str.encode(str(arrow.utcnow()) + "\n"))
     fp.write(str.encode(mypid))
-    fp.write(str.encode(arguments['PAIRS'] + "\n"))
+    fp.write(str.encode(pairs + "\n"))
     fp.flush()
     os.chown(fp.name, -1, 100)
     os.chmod(fp.name, 0o664)
 
     journal.send(
         MESSAGE='Starting Pomodoro. {} are working on {}'.format(
-            arguments['PAIRS'], arguments['PTID']),
+            pairs, arguments['PTID']),
         APPLICATION='splat',
         PRIORITY="NOTICE",
-        PAIRS=f"{arguments['PAIRS']}",
+        PAIRS=pairs,
         PTID=f"{arguments['PTID']}",
     )
 
