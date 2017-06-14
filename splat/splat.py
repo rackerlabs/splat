@@ -259,6 +259,10 @@ def _vault_strip_response(response):
 
 
 def get_ptid(ptid):
+    if '#' in ptid:
+        ptid = ptid.translate({ord(c): None for c in '#'})
+    elif 'https://www.pivotaltracker.com/story/show/' in ptid:
+        ptid = ptid.split('/')[-1]
     vault_entry = vault_read("/mpcf/automation/splat/params")
     pivotal_api_token = vault_entry.get('pivotal_api_token')
     pivotal_story_api = "https://www.pivotaltracker.com/services/v5/stories/{}"
