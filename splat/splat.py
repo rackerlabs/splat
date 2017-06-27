@@ -194,6 +194,7 @@ def start(arguments):
         string_size = len(str.encode(str(REMAINING).zfill(4) + "\n"))
         fp.seek(-string_size, 1)
 
+    print("\a")
 
 def status():
     clean_stale_files()
