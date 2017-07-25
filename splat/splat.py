@@ -236,7 +236,7 @@ def get_pid_from_pairs(pairs):
 
 
 def connect_to_vault():
-    client = hvac.Client(url=os.environ['VAULT_ADDR'])
+    client = hvac.Client(url=os.environ['VAULT_ADDR'], verify="/etc/ssl/certs/bubble_int.pem")
     PATH=os.path.expanduser('~/.vault-token')
     if os.path.isfile(PATH) and os.access(PATH, os.R_OK):
         with open(PATH, "r") as F:
